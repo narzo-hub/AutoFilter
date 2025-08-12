@@ -269,7 +269,7 @@ Nᴀᴍᴇ : {}
 
 Mᴇꜱꜱᴀɢᴇ : <b>{}</b>"""
     
-    CAPTION = """<b><a href="https://t.me/nova_flix">{file_name}</a></b>\n\n<b><blockquote><i>ᴘʟᴇᴀsᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪs ꜰɪʟᴇs ᴛᴏ ᴛʜᴇ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇ ᴀɴᴅ ᴄʟᴏsᴇ ᴛʜɪs ᴍᴇssᴀɢᴇ</i></blockquote></b>"""
+    CAPTION = """<b><a href="https://t.me/+y9sugbgrEnM1NjRl">{file_name}</a></b>\n\n<b><blockquote><i>ᴘʟᴇᴀsᴇ ꜰᴏʀᴡᴀʀᴅ ᴛʜɪs ꜰɪʟᴇs ᴛᴏ ᴛʜᴇ sᴀᴠᴇᴅ ᴍᴇssᴀɢᴇ ᴀɴᴅ ᴄʟᴏsᴇ ᴛʜɪs ᴍᴇssᴀɢᴇ</i></blockquote></b>"""
 
     IMDB_TEMPLATE_TXT = """
 <b>‣ ᴛɪᴛʟᴇ : <a href={url}>{title}</a>
