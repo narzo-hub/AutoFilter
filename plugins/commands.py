@@ -39,7 +39,7 @@ async def start(client, message):
                 ],[
                     InlineKeyboardButton('• sᴜᴘᴘᴏʀᴛ •', url='https://t.me/+XZmX_1FLbaBiMmE1')
                 ],[
-                    InlineKeyboardButton('• ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇs ᴄʜᴀɴɴᴇʟ •', url="https://t.me/+l0NtnfVX8jk3NGU1")
+                    InlineKeyboardButton('• ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇs ᴄʜᴀɴɴᴇʟ •', url="https://t.me/+XZmX_1FLbaBiMmE1")
                   ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         await message.reply(script.GSTART_TXT.format(message.from_user.mention if message.from_user else message.chat.title, temp.U_NAME, temp.B_NAME), reply_markup=reply_markup, disable_web_page_preview=True)
@@ -81,7 +81,7 @@ async def start(client, message):
         await m.edit_text("<b><i>ꜱᴛᴀʀᴛɪɴɢ...</i></b>")
         await asyncio.sleep(0.4)
         await m.delete()        
-        m=await message.reply_sticker("CAACAgUAAxkBAAJFeWd037UWP-vgb_dWo55DCPZS9zJzAAJpEgACqXaJVxBrhzahNnwSHgQ") 
+        m=await message.reply_sticker("CAACAgUAAxkBAAEPF3NolGVXc8Kdn1jVJEPo9Wcip4_xgAACHBEAAhB6kVVzbEUSlZO57zYE") 
         await asyncio.sleep(1)
         await m.delete()
         await message.reply_photo(
