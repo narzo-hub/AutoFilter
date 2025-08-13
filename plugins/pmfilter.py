@@ -2151,8 +2151,6 @@ async def cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton('ᴇxᴛʀᴀ', callback_data='extra'),
             InlineKeyboardButton('ᴛᴇʟᴇɢʀᴀᴘʜ', callback_data='tele')
         ], [
-            InlineKeyboardButton('ɢɪᴛʜᴜʙ', callback_data='git')
-        ], [
             InlineKeyboardButton('◁', callback_data='help'),
             InlineKeyboardButton('• ʜᴏᴍᴇ •', callback_data='start'),
             InlineKeyboardButton('▷', callback_data='help2')
@@ -2185,7 +2183,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         
     elif query.data == "source":
         buttons = [[
-            InlineKeyboardButton('sᴏᴜʀᴄᴇ ᴄᴏᴅᴇ 📜', url='https://github.com/codeflix-bots/autofilter.git'),
+            InlineKeyboardButton('sᴏᴜʀᴄᴇ ᴄᴏᴅᴇ 📜', url=''),
             InlineKeyboardButton('⇋ ʙᴀᴄᴋ ⇋', callback_data='about')
         ]]
         reply_markup = InlineKeyboardMarkup(buttons)
