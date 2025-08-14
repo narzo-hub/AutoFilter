@@ -60,7 +60,7 @@ OWNER_UPI_ID = environ.get('OWNER_UPI_ID', '@fam')
 #Auto approve 
 CHAT_ID = [int(app_chat_id) if id_pattern.search(app_chat_id) else app_chat_id for app_chat_id in environ.get('CHAT_ID', '').split()]
 TEXT = environ.get("APPROVED_WELCOME_TEXT", "<b>{mention},\n\nʏᴏᴜʀ ʀᴇǫᴜᴇsᴛ ᴛᴏ ᴊᴏɪɴ {title} ɪs ᴀᴘᴘʀᴏᴠᴇᴅ.\n\‣ ᴘᴏᴡᴇʀᴇᴅ ʙʏ @codflix_bots</b>")
-APPROVED = environ.get("APPROVED_WELCOME", "on").lower()
+APPROVED = environ.get("APPROVED_WELCOME", "off").lower()
 
 
 # ============================
