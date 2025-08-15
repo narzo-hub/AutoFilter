@@ -2169,7 +2169,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
             InlineKeyboardButton('ᴄᴏᴍᴍᴀɴᴅs •', callback_data='main')
         ], [
             InlineKeyboardButton('• ᴅᴇᴠᴇʟᴏᴘᴇʀ', user_id=int(7123837674)),
-            InlineKeyboardButton('ɴᴇᴛᴡᴏʀᴋ •', url="t.me/otakuflix_network")
+            InlineKeyboardButton('ɴᴇᴛᴡᴏʀᴋ •', url="https://t.me/berozgar_movie")
         ], [
             InlineKeyboardButton('• ʙᴀᴄᴋ •', callback_data='start')
         ]]
