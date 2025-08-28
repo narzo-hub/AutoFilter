@@ -82,7 +82,7 @@ async def start(client, message):
         await m.edit_text("<b><i>ꜱᴛᴀʀᴛɪɴɢ...</i></b>")
         await asyncio.sleep(0.4)
         await m.delete()        
-        m=await message.reply_sticker("CAACAgUAAxkBAAEPF3NolGVXc8Kdn1jVJEPo9Wcip4_xgAACHBEAAhB6kVVzbEUSlZO57zYE") 
+        m=await message.reply_sticker("CAACAgUAAxkBAAEPQtxor8rr8wr8ZBOQZ1tYZLvEwTORZQAC7RgAAtdSIFTLp_3GzUHNfDYE") 
         await asyncio.sleep(1)
         await m.delete()
         await message.reply_photo(
@@ -141,7 +141,7 @@ async def start(client, message):
         await m.edit_text("ꜱᴛᴀʀᴛɪɴɢ ʙᴀʙʏ...")
         await asyncio.sleep(0.4)
         await m.delete()        
-        m=await message.reply_sticker("CAACAgUAAxkBAAECroBmQKMAAQ-Gw4nibWoj_pJou2vP1a4AAlQIAAIzDxlVkNBkTEb1Lc4eBA") 
+        m=await message.reply_sticker("CAACAgUAAxkBAAEPQtxor8rr8wr8ZBOQZ1tYZLvEwTORZQAC7RgAAtdSIFTLp_3GzUHNfDYE") 
         await asyncio.sleep(1)
         await m.delete()
         await message.reply_photo(
