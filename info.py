@@ -32,7 +32,7 @@ NOR_IMG = environ.get("NOR_IMG", "https://envs.sh/Wdj.jpg")
 MELCOW_VID = environ.get("MELCOW_VID", "https://envs.sh/Wdj.jpg")
 SPELL_IMG = environ.get("SPELL_IMG", "https://envs.sh/Wdj.jpg")
 SUBSCRIPTION = (environ.get('SUBSCRIPTION', 'https://envs.sh/Wdj.jpg'))
-FSUB_PICS = (environ.get('FSUB_PICS', 'https://envs.sh/Wdj.jpg')).split()  # Fsub pic
+FSUB_PICS = (environ.get('FSUB_PICS', 'https://envs.sh/tKX.jpg')).split()  # Fsub pic
 
 # ============================
 # Admin, Channels & Users Configuration
