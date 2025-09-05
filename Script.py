@@ -6,7 +6,7 @@ class script(object):
     HELP_TXT = """» ᴡʜᴇʀᴇ ᴅᴏ ʏᴏᴜ ᴡᴀɴᴛ ᴛᴏ ᴏᴘᴇɴ ᴛʜᴇ sᴇᴛᴛɪɴɢs ᴍᴇɴᴜ?."""
 
     ABOUT_TXT = """<blockquote><b>❍ ᴍʏ ɴᴀᴍᴇ : <a href="https://t.me/Artixa_filter_bot">❤️‍🔥𝔸𝕣𝕥𝕚𝕩𝕒_𝕗𝕚𝕝𝕥𝕖𝕣_𝕓𝕠𝕥❤️‍🔥</a>
-❍ ᴄʀᴇᴀᴛᴏʀ : <a href="https://t.me/BruceJaat">𝔹𝕣𝕦𝕔𝕖𝕁𝕒𝕒𝕥</a>
+❍ ᴄʀᴇᴀᴛᴏʀ : <a href="https://t.me/Bruce_Jaat_bot">𝔹𝕣𝕦𝕔𝕖𝕁𝕒𝕒𝕥</a>
 ❍ ʟɪʙʀᴀʀʏ : <a href="https://pyrogram.org/">ᴘʏʀᴏɢʀᴀᴍ</a>
 ❍ ʟᴀɴɢᴜᴀɢᴇ : <a href="https://www.python.org/">ᴘʏᴛʜᴏɴ</a>
 ❍ ᴅᴀᴛᴀʙᴀꜱᴇ : <a href="https://www.mongodb.com/">ᴍᴏɴɢᴏ ᴅʙ</a>
