@@ -37,9 +37,9 @@ async def start(client, message):
         buttons = [[
                     InlineKeyboardButton('⇆ ᴀᴅᴅ ᴍᴇ ᴛᴏ ʏᴏᴜʀ ɢʀᴏᴜᴘs ⇆', url=f'http://t.me/{temp.U_NAME}?startgroup=true')
                 ],[
-                    InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ 🫠', url='https://t.me/+XZmX_1FLbaBiMmE1')
+                    InlineKeyboardButton('sᴜᴘᴘᴏʀᴛ 🫠', url='https://t.me/+TMjaCOXnTZ0wZTc1')
                 ],[
-                    InlineKeyboardButton('🎗️ ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇs ᴄʜᴀɴɴᴇʟ 🎗️', url="https://t.me/+XZmX_1FLbaBiMmE1")
+                    InlineKeyboardButton('🎗️ ᴊᴏɪɴ ᴜᴘᴅᴀᴛᴇs ᴄʜᴀɴɴᴇʟ 🎗️', url="https://t.me/+kQbHCh8YIDg5ZTM9")
                   ]]
         reply_markup = InlineKeyboardMarkup(buttons)
         await message.reply(script.GSTART_TXT.format(message.from_user.mention if message.from_user else message.chat.title, temp.U_NAME, temp.B_NAME), reply_markup=reply_markup, disable_web_page_preview=True)
