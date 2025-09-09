@@ -44,7 +44,7 @@ BIN_CHANNEL = int(environ.get('BIN_CHANNEL', '-1002831115957'))  # Bin channel i
 MOVIE_UPDATE_CHANNEL = int(environ.get('MOVIE_UPDATE_CHANNEL', '-1002805276505'))  # Notification of those who verify will be sent to your channel
 PREMIUM_LOGS = int(environ.get('PREMIUM_LOGS', 0))  # Premium logs channel id
 auth_channel = environ.get('AUTH_CHANNEL', '-1002558348052')  # Channel/Group ID for force sub (make sure bot is admin)
-DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '').split()]
+DELETE_CHANNELS = [int(dch) if id_pattern.search(dch) else dch for dch in environ.get('DELETE_CHANNELS', '-1002720613611').split()]
 support_chat_id = environ.get('SUPPORT_CHAT_ID', '-1002995638706')  # Support group id (make sure bot is admin)
 # This Channel Is For When User Request Any File Name With command or hashtag like - /request or #request
 reqst_channel = environ.get('REQST_CHANNEL', '-1002831115957')
