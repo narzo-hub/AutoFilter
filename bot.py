@@ -37,9 +37,9 @@ botStartTime = time.time()
 ppath = "plugins/*.py"
 files = glob.glob(ppath)
 
-async def Lucy_start():
+async def ᴀʀᴛɪxᴀ_start():
     print('\n')
-    print('\nInitalizing Lucy')
+    print('\nInitalizing ᴀʀᴛɪxᴀ')
     await Codeflix.start()
     bot_info = await Codeflix.get_me()
     Codeflix.username = bot_info.username
@@ -97,6 +97,6 @@ async def Lucy_start():
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     try:
-        loop.run_until_complete(Lucy_start())
+        loop.run_until_complete(ᴀʀᴛɪxᴀ_start())
     except KeyboardInterrupt:
         logging.info('Service Stopped Bye 👋')
