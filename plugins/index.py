@@ -150,11 +150,13 @@ async def index_files_to_db(lst_msg_id, chat, msg, bot):
                 media.caption = message.caption
                 media.message_id = message.id  # Store message ID
                 aynav, vnay = await save_file(media)
-                try:
-    files = await get_files_from_database()  # Replace with your actual function
+  @Client.on_message(filters.command('files'))
+async def send_files_in_sequence(bot, message):
+    files = await get_files_from_database()  # Should return list of file objects
     sorted_files = sorted(files, key=lambda x: x.message_id)
-except Exception as e:
-    logger.exception(e)
+    for file in sorted_files:
+        # Replace with the actual send method
+        await bot.send_document(message.chat.id, file.file_id, caption=file.caption)
                 if message.empty:
                     deleted += 1
                     continue
