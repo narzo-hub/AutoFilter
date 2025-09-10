@@ -150,9 +150,11 @@ async def index_files_to_db(lst_msg_id, chat, msg, bot):
                 media.caption = message.caption
                 media.message_id = message.id  # Store message ID
                 aynav, vnay = await save_file(media)
-                files = await get_files_from_database()  # Replace with your actual function
-sorted_files = sorted(files, key=lambda x: x.message_id)
-                # ... rest of your code
+                try:
+    files = await get_files_from_database()  # Replace with your actual function
+    sorted_files = sorted(files, key=lambda x: x.message_id)
+except Exception as e:
+    logger.exception(e)
                 if message.empty:
                     deleted += 1
                     continue
