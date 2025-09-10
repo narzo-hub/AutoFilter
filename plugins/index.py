@@ -4,7 +4,7 @@ from pyrogram import Client, filters, enums
 from pyrogram.errors import FloodWait
 
 from pyrogram.errors.exceptions.bad_request_400 import ChannelInvalid, ChatAdminRequired, UsernameInvalid, UsernameNotModified, UserIsBlocked
-from info import ADMINS, LOG_CHANNEL, INDEX_EXTENSIONS
+from info import ADMINS, LOG_CHANNEL
 from database.ia_filterdb import save_file
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup, ForceReply
 from utils import temp, get_readable_time
