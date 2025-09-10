@@ -145,9 +145,12 @@ async def index_files_to_db(lst_msg_id, chat, msg, bot):
             temp.CANCEL = False
             async for message in bot.iter_messages(chat, min_id=1, max_id=lst_msg_id):
                 logger.info(f"Processing message {message.id}")
-                if temp.CANCEL:
-                    await msg.edit(f"Successfully Cancelled!!\n\nSaved <code>{total_files}</code> files to dataBase!\nDuplicate Files Skipped: <code>{duplicate}</code>\nDeleted Messages Skipped: <code>{deleted}</code>\nNon-Media messages skipped: <code>{no_media + unsupported}</code>(Unsupported Media - `{unsupported}` )\nErrors Occurred: <code>{errors}</code>")
-                    break
+                # ... rest of your code
+                media.file_type = message.media.value
+                media.caption = message.caption
+                media.message_id = message.id  # Store message ID
+                aynav, vnay = await save_file(media)
+                # ... rest of your code
                 if message.empty:
                     deleted += 1
                     continue
