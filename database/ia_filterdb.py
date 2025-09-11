@@ -40,11 +40,13 @@ class Media(Document):
     file_type = fields.StrField(allow_none=True)
     mime_type = fields.StrField(allow_none=True)
     caption = fields.StrField(allow_none=True)
+    sequence = fields.IntField()
 
     class Meta:
         indexes = ('$file_name', )
         collection_name = COLLECTION_NAME
 
+# Secondary DB Model
 @instance2.register
 class Media2(Document):
     file_id = fields.StrField(attribute='_id')
@@ -54,10 +56,49 @@ class Media2(Document):
     file_type = fields.StrField(allow_none=True)
     mime_type = fields.StrField(allow_none=True)
     caption = fields.StrField(allow_none=True)
+    sequence = fields.IntField()
 
     class Meta:
         indexes = ('$file_name', )
         collection_name = COLLECTION_NAME
+
+async def save_file(bot, media):
+    global saveMedia
+    file_id, file_ref = unpack_new_file_id(media.file_id)
+    file_name = re.sub(r"(_|\-|\.|\+)", " ", str(media.file_name))
+    
+    # Get the current sequence number
+    last_file = await saveMedia.find_one(sort=[("sequence", -1)])
+    if last_file and "sequence" in last_file:
+        next_seq = last_file["sequence"] + 1
+    else:
+        next_seq = 1
+    
+    try:
+        file = saveMedia(
+            file_id=file_id,
+            file_ref=file_ref,
+            file_name=file_name,
+            file_size=media.file_size,
+            file_type=media.file_type,
+            mime_type=media.mime_type,
+            caption=media.caption.html if media.caption else None,
+            sequence=next_seq
+        )
+    except ValidationError:
+        logger.exception('Error occurred while saving file in database')
+        return False, 2
+    else:
+        try:
+            await file.commit()
+        except DuplicateKeyError:
+            logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')
+            return False, 0
+        else:
+            logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database with sequence {next_seq}')
+            if await get_status(bot.me.id):
+                await send_msg(bot, file.file_name, file.caption)
+            return True, 1
 
 async def choose_mediaDB():
     """This Function chooses which database to use based on the value of indexDB key in the dict tempDict."""
@@ -68,42 +109,6 @@ async def choose_mediaDB():
     else:
         logger.info("Using second db (Media2)")
         saveMedia = Media2
-
-async def save_file(bot, media):
-  async def save_file(media):
-    """Save file in the database."""
-    
-    file_id = unpack_new_file_id(media.file_id)
-    file_name = clean_file_name(media.file_name)
-    
-    file = {
-        'file_id': file_id,
-        'file_name': file_name,
-        'file_size': media.file_size,
-        'caption': media.caption.html if media.caption else None
-    }
-
-    if is_file_already_saved(file_id, file_name):
-        return False, 0
-
-    try:
-        col.insert_one(file)
-        print(f"{file_name} is successfully saved.")
-        return True, 1
-    except DuplicateKeyError:
-        print(f"{file_name} is already saved.")
-        return False, 0
-    except:
-        if MULTIPLE_DATABASE:
-            try:
-                sec_col.insert_one(file)
-                print(f"{file_name} is successfully saved.")
-                return True, 1
-            except DuplicateKeyError:
-                print(f"{file_name} is already saved.")
-                return False, 0
-        else:
-            print("Your Current File Database Is Full, Turn On Multiple Database Feature And Add Second File Mongodb To Save File.")
 
 
 async def get_search_results(chat_id, query, file_type=None, max_results=10, offset=0, filter=False):
