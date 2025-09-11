@@ -2756,7 +2756,7 @@ async def auto_filter(client, name, msg, reply_msg, ai_search, spoll=False):
                     return await reply_msg.edit_text(f"**⚠️ No File Found For Your Query - {name}**\n**Make Sure Spelling Is Correct.**")
         else:
             return
-      message = msg.message.reply_to_message  # msg will be callback query
+       message = msg.message.reply_to_message  # msg will be callback query
         search, files, offset, total_results = spoll
         settings = await get_settings(message.chat.id)
         await msg.message.delete()
