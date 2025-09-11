@@ -80,14 +80,15 @@ async def save_file(bot, media):
             logger.warning(f'{file_name} is already saved in primary database!')
             return False, 0
     file = saveMedia(
-        file_id=file_id,
-        file_ref=file_ref,
-        file_name=file_name,
-        file_size=media.file_size,
-        file_type=media.file_type,
-        mime_type=media.mime_type,
-        caption=media.caption.html if media.caption else None,
-    )
+    file_id=file_id,
+    file_ref=file_ref,
+    file_name=file_name,
+    file_size=media.file_size,
+    file_type=media.file_type,
+    mime_type=media.mime_type,
+    caption=media.caption.html if media.caption else None,
+)
+await file.commit()
   except ValidationError:
     logger.exception('Error occurred while saving file in database')
     return False, 2
