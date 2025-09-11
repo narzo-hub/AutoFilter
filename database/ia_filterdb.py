@@ -70,38 +70,41 @@ async def choose_mediaDB():
         saveMedia = Media2
 
 async def save_file(bot, media):
-  """Save file in database"""
-  global saveMedia
-  file_id, file_ref = unpack_new_file_id(media.file_id)
-  file_name = re.sub(r"(_|\-|\.|\+)", " ", str(media.file_name))
-  try:
-    if saveMedia == Media2: 
-        if await Media.count_documents({'file_id': file_id}, limit=1):
-            logger.warning(f'{file_name} is already saved in primary database!')
-            return False, 0
-    file = saveMedia(
-        file_id=file_id,
-        file_ref=file_ref,
-        file_name=file_name,
-        file_size=media.file_size,
-        file_type=media.file_type,
-        mime_type=media.mime_type,
-        caption=media.caption.html if media.caption else None,
-    )
-  except ValidationError:
-    logger.exception('Error occurred while saving file in database')
-    return False, 2
-  else:
+  async def save_file(media):
+    """Save file in the database."""
+    
+    file_id = unpack_new_file_id(media.file_id)
+    file_name = clean_file_name(media.file_name)
+    
+    file = {
+        'file_id': file_id,
+        'file_name': file_name,
+        'file_size': media.file_size,
+        'caption': media.caption.html if media.caption else None
+    }
+
+    if is_file_already_saved(file_id, file_name):
+        return False, 0
+
     try:
-      await file.commit()
-    except DuplicateKeyError:
-      logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')   
-      return False, 0
-    else:
-        logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database')
-        if await get_status(bot.me.id):
-            await send_msg(bot, file.file_name, file.caption)
+        col.insert_one(file)
+        print(f"{file_name} is successfully saved.")
         return True, 1
+    except DuplicateKeyError:
+        print(f"{file_name} is already saved.")
+        return False, 0
+    except:
+        if MULTIPLE_DATABASE:
+            try:
+                sec_col.insert_one(file)
+                print(f"{file_name} is successfully saved.")
+                return True, 1
+            except DuplicateKeyError:
+                print(f"{file_name} is already saved.")
+                return False, 0
+        else:
+            print("Your Current File Database Is Full, Turn On Multiple Database Feature And Add Second File Mongodb To Save File.")
+
 
 async def get_search_results(chat_id, query, file_type=None, max_results=10, offset=0, filter=False):
     """For given query return (results, next_offset)"""
