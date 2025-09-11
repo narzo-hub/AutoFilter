@@ -3,17 +3,19 @@ from struct import pack
 from pyrogram.file_id import FileId
 from pymongo import MongoClient
 from pymongo.errors import DuplicateKeyError
-from info import FILE_DB_URI, SEC_FILE_DB_URI, DATABASE_NAME, COLLECTION_NAME, MULTIPLE_DATABASE, USE_CAPTION_FILTER, MAX_B_TN
+from info import CAPTION_LANGUAGES, DATABASE_URI, DATABASE_URI2, DATABASE_NAME, COLLECTION_NAME, USE_CAPTION_FILTER, MAX_B_TN, MOVIE_UPDATE_CHANNEL, OWNERID
+from utils import get_settings, save_group_settings, temp, get_status
+from .Imdbposter import get_movie_details, fetch_image
 
 # First Database For File Saving 
-client = MongoClient(FILE_DB_URI)
+client = AsyncIOMotorClient(DATABASE_URI)
 db = client[DATABASE_NAME]
-col = db[COLLECTION_NAME]
+instance = Instance.from_db(db)
 
 # Second Database For File Saving
-sec_client = MongoClient(SEC_FILE_DB_URI)
-sec_db = sec_client[DATABASE_NAME]
-sec_col = sec_db[COLLECTION_NAME]
+client2 = AsyncIOMotorClient(DATABASE_URI2)
+db2 = client2[DATABASE_NAME]
+instance2 = Instance.from_db(db2)
 
 
 async def save_file(media):
@@ -169,4 +171,64 @@ def unpack_new_file_id(new_file_id):
         )
     )
     return file_id
-    
+
+async def send_msg(bot, filename, caption): 
+    try:
+        filename = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', filename).strip()
+        caption = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', caption).strip()
+        
+        year_match = re.search(r"\b(19|20)\d{2}\b", caption)
+        year = year_match.group(0) if year_match else None
+
+        pattern = r"(?i)(?:s|season)0*(\d{1,2})"
+        season = re.search(pattern, caption) or re.search(pattern, filename)
+        season = season.group(1) if season else None 
+
+        if year:
+            filename = filename[: filename.find(year) + 4]  
+        elif season and season in filename:
+            filename = filename[: filename.find(season) + 1]
+
+        qualities = ["ORG", "org", "hdcam", "HDCAM", "HQ", "hq", "HDRip", "hdrip", "camrip", "CAMRip", "hdtc", "predvd", "DVDscr", "dvdscr", "dvdrip", "dvdscr", "HDTC", "dvdscreen", "HDTS", "hdts"]
+        quality = await get_qualities(caption.lower(), qualities) or "HDRip"
+
+        language = ""
+        possible_languages = CAPTION_LANGUAGES
+        for lang in possible_languages:
+            if lang.lower() in caption.lower():
+                language += f"{lang}, "
+        language = language[:-2] if language else "Not idea 😄"
+
+        filename = re.sub(r"[\(\)\[\]\{\}:;'\-!]", "", filename)
+
+        text = "#𝑵𝒆𝒘_𝑭𝒊𝒍𝒆_𝑨𝒅𝒅𝒆𝒅 ✅\n\n👷𝑵𝒂𝒎𝒆: `{}`\n\n🌳𝑸𝒖𝒂𝒍𝒊𝒕𝒚: {}\n\n🍁𝑨𝒖𝒅𝒊𝒐: {}"
+        text = text.format(filename, quality, language)
+
+        if await add_name(OWNERID, filename):
+            imdb = await get_movie_details(filename)  
+            resized_poster = None
+
+            if imdb:
+                poster_url = imdb.get('poster_url')
+                if poster_url:
+                    resized_poster = await fetch_image(poster_url)  
+
+            filenames = filename.replace(" ", '-')
+            btn = [[InlineKeyboardButton('🌲 Get Files 🌲', url=f"https://telegram.me/{temp.U_NAME}?start=getfile-{filenames}")]]
+            
+            if resized_poster:
+                await bot.send_photo(chat_id=MOVIE_UPDATE_CHANNEL, photo=resized_poster, caption=text, reply_markup=InlineKeyboardMarkup(btn))
+            else:              
+                await bot.send_message(chat_id=MOVIE_UPDATE_CHANNEL, text=text, reply_markup=InlineKeyboardMarkup(btn))
+
+    except:
+        pass
+
+async def get_qualities(text, qualities: list):
+    """Get all Quality from text"""
+    quality = []
+    for q in qualities:
+        if q in text:
+            quality.append(q)
+    quality = ", ".join(quality)
+    return quality[:-2] if quality.endswith(", ") else quality
