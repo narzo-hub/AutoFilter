@@ -2779,21 +2779,14 @@ async def auto_filter(client, msg, spoll=False):
     temp.GETALL[key] = files
     temp.SHORT[message.from_user.id] = message.chat.id
     if settings["button"]:
-        # Before creating buttons for files
-files = sorted(files, key=lambda x: x.file_name.lower())
-
-btn = [
-    [
-        InlineKeyboardButton(
-            text=f"[{get_size(file.file_size)}] {' '.join(filter(lambda x: not x.startswith('[') and not x.startswith('@') and not x.startswith('www.'), file.file_name.split()))}", callback_data=f"{pre}#{file.file_id}"
-        ),
-    ]
-    for file in files
-] 
+        btn = [
             [
-                InlineKeyboardButton("⇈ Sᴇʟᴇᴄᴛ Oᴘᴛɪᴏɴ Hᴇʀᴇ ⇈", 'reqinfo')
+                InlineKeyboardButton(
+                    text=f"[{get_size(file.file_size)}]-💠-{file.file_name}", callback_data=f'{pre}#{file.file_id}'
+                ),
             ]
-        )
+            for file in files
+        ]
         btn.insert(0, 
             [
                 InlineKeyboardButton(f'Qᴜᴀʟɪᴛʏ', callback_data=f"qualities#{key}"),
