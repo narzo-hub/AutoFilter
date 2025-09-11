@@ -15,6 +15,7 @@ from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
+
 #---------------------------------------------------------
 # Some basic variables needed
 tempDict = {'indexDB': DATABASE_URI}
@@ -24,11 +25,10 @@ client = AsyncIOMotorClient(DATABASE_URI)
 db = client[DATABASE_NAME]
 instance = Instance.from_db(db)
 
-#secondary db
+# Secondary db
 client2 = AsyncIOMotorClient(DATABASE_URI2)
 db2 = client2[DATABASE_NAME]
 instance2 = Instance.from_db(db2)
-
 
 # Primary DB Model
 @instance.register
@@ -69,39 +69,61 @@ async def choose_mediaDB():
         logger.info("Using second db (Media2)")
         saveMedia = Media2
 
+# SEQUENTIAL AUTO DB SELECTION FOR SAVE
 async def save_file(bot, media):
-  """Save file in database"""
-  global saveMedia
-  file_id, file_ref = unpack_new_file_id(media.file_id)
-  file_name = re.sub(r"(_|\-|\.|\+)", " ", str(media.file_name))
-  try:
-    if saveMedia == Media2: 
-        if await Media.count_documents({'file_id': file_id}, limit=1):
-            logger.warning(f'{file_name} is already saved in primary database!')
-            return False, 0
-    file = saveMedia(
-        file_id=file_id,
-        file_ref=file_ref,
-        file_name=file_name,
-        file_size=media.file_size,
-        file_type=media.file_type,
-        mime_type=media.mime_type,
-        caption=media.caption.html if media.caption else None,
-    )
-  except ValidationError:
-    logger.exception('Error occurred while saving file in database')
-    return False, 2
-  else:
+    """Save file in database, try primary first then secondary if duplicate."""
+    global saveMedia
+    file_id, file_ref = unpack_new_file_id(media.file_id)
+    file_name = re.sub(r"(_|\-|\.|\+)", " ", str(media.file_name))
+    # Try saving in primary DB first
     try:
-      await file.commit()
-    except DuplicateKeyError:
-      logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')   
-      return False, 0
+        file = Media(
+            file_id=file_id,
+            file_ref=file_ref,
+            file_name=file_name,
+            file_size=media.file_size,
+            file_type=media.file_type,
+            mime_type=media.mime_type,
+            caption=media.caption.html if media.caption else None,
+        )
+    except ValidationError:
+        logger.exception('Error occurred while saving file in primary database')
+        return False, 2
     else:
-        logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database')
-        if await get_status(bot.me.id):
-            await send_msg(bot, file.file_name, file.caption)
-        return True, 1
+        try:
+            await file.commit()
+        except DuplicateKeyError:
+            logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in primary database, trying secondary database...')
+            # Try secondary DB
+            try:
+                file2 = Media2(
+                    file_id=file_id,
+                    file_ref=file_ref,
+                    file_name=file_name,
+                    file_size=media.file_size,
+                    file_type=media.file_type,
+                    mime_type=media.mime_type,
+                    caption=media.caption.html if media.caption else None,
+                )
+            except ValidationError:
+                logger.exception('Error occurred while saving file in secondary database')
+                return False, 2
+            else:
+                try:
+                    await file2.commit()
+                except DuplicateKeyError:
+                    logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in secondary database too.')
+                    return False, 0
+                else:
+                    logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to secondary database')
+                    if await get_status(bot.me.id):
+                        await send_msg(bot, file2.file_name, file2.caption)
+                    return True, 1
+        else:
+            logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to primary database')
+            if await get_status(bot.me.id):
+                await send_msg(bot, file.file_name, file.caption)
+            return True, 1
 
 async def get_search_results(chat_id, query, file_type=None, max_results=10, offset=0, filter=False):
     """For given query return (results, next_offset)"""
@@ -170,7 +192,6 @@ async def get_search_results(chat_id, query, file_type=None, max_results=10, off
         next_offset = ''
     return files, next_offset, total_results
 
-
 async def get_bad_files(query, file_type=None, filter=False):
     """For given query return (results, next_offset)"""
     query = query.strip()
@@ -215,7 +236,6 @@ async def get_file_details(query):
         filedetails = await cursor2.to_list(length=1)
     return filedetails
 
-
 def encode_file_id(s: bytes) -> str:
     r = b""
     n = 0
@@ -249,7 +269,6 @@ def unpack_new_file_id(new_file_id):
     )
     file_ref = encode_file_ref(decoded.file_reference)
     return file_id, file_ref
-
 
 async def send_msg(bot, filename, caption): 
     try:
