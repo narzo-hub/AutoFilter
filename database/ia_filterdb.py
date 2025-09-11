@@ -40,13 +40,11 @@ class Media(Document):
     file_type = fields.StrField(allow_none=True)
     mime_type = fields.StrField(allow_none=True)
     caption = fields.StrField(allow_none=True)
-    sequence = fields.IntField()
 
     class Meta:
         indexes = ('$file_name', )
         collection_name = COLLECTION_NAME
 
-# Secondary DB Model
 @instance2.register
 class Media2(Document):
     file_id = fields.StrField(attribute='_id')
@@ -56,49 +54,10 @@ class Media2(Document):
     file_type = fields.StrField(allow_none=True)
     mime_type = fields.StrField(allow_none=True)
     caption = fields.StrField(allow_none=True)
-    sequence = fields.IntField()
 
     class Meta:
         indexes = ('$file_name', )
         collection_name = COLLECTION_NAME
-
-async def save_file(bot, media):
-    global saveMedia
-    file_id, file_ref = unpack_new_file_id(media.file_id)
-    file_name = re.sub(r"(_|\-|\.|\+)", " ", str(media.file_name))
-    
-    # Get the current sequence number
-    last_file = await saveMedia.find_one(sort=[("sequence", -1)])
-    if last_file and "sequence" in last_file:
-        next_seq = last_file["sequence"] + 1
-    else:
-        next_seq = 1
-    
-    try:
-        file = saveMedia(
-            file_id=file_id,
-            file_ref=file_ref,
-            file_name=file_name,
-            file_size=media.file_size,
-            file_type=media.file_type,
-            mime_type=media.mime_type,
-            caption=media.caption.html if media.caption else None,
-            sequence=next_seq
-        )
-    except ValidationError:
-        logger.exception('Error occurred while saving file in database')
-        return False, 2
-    else:
-        try:
-            await file.commit()
-        except DuplicateKeyError:
-            logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')
-            return False, 0
-        else:
-            logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database with sequence {next_seq}')
-            if await get_status(bot.me.id):
-                await send_msg(bot, file.file_name, file.caption)
-            return True, 1
 
 async def choose_mediaDB():
     """This Function chooses which database to use based on the value of indexDB key in the dict tempDict."""
@@ -110,43 +69,106 @@ async def choose_mediaDB():
         logger.info("Using second db (Media2)")
         saveMedia = Media2
 
+async def save_file(bot, media):
+  """Save file in database"""
+  global saveMedia
+  file_id, file_ref = unpack_new_file_id(media.file_id)
+  file_name = re.sub(r"(_|\-|\.|\+)", " ", str(media.file_name))
+  try:
+    if saveMedia == Media2: 
+        if await Media.count_documents({'file_id': file_id}, limit=1):
+            logger.warning(f'{file_name} is already saved in primary database!')
+            return False, 0
+    file = saveMedia(
+        file_id=file_id,
+        file_ref=file_ref,
+        file_name=file_name,
+        file_size=media.file_size,
+        file_type=media.file_type,
+        mime_type=media.mime_type,
+        caption=media.caption.html if media.caption else None,
+    )
+  except ValidationError:
+    logger.exception('Error occurred while saving file in database')
+    return False, 2
+  else:
+    try:
+      await file.commit()
+    except DuplicateKeyError:
+      logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')   
+      return False, 0
+    else:
+        logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database')
+        if await get_status(bot.me.id):
+            await send_msg(bot, file.file_name, file.caption)
+        return True, 1
 
 async def get_search_results(chat_id, query, file_type=None, max_results=10, offset=0, filter=False):
     """For given query return (results, next_offset)"""
-    
+    if chat_id is not None:
+        settings = await get_settings(int(chat_id))
+        try:
+            if settings['max_btn']:
+                max_results = 10
+            else:
+                max_results = int(MAX_B_TN)
+        except KeyError:
+            await save_group_settings(int(chat_id), 'max_btn', False)
+            settings = await get_settings(int(chat_id))
+            if settings['max_btn']:
+                max_results = 10
+            else:
+                max_results = int(MAX_B_TN)
     query = query.strip()
     if not query:
         raw_pattern = '.'
     elif ' ' not in query:
         raw_pattern = r'(\b|[\.\+\-_])' + query + r'(\b|[\.\+\-_])'
     else:
-        raw_pattern = query.replace(' ', r'.*[\s\.\+\-_]') 
+        raw_pattern = query.replace(' ', r'.*[\s\.\+\-_()]')
+    
     try:
         regex = re.compile(raw_pattern, flags=re.IGNORECASE)
     except:
-        regex = query
-    filter = {'file_name': regex}
-    files = []
-    if MULTIPLE_DATABASE:
-        cursor1 = col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
-        cursor2 = sec_col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
-        
-        for file in cursor1:
-            files.append(file)
-        for file in cursor2:
-            files.append(file)
+        return []
+
+    if USE_CAPTION_FILTER:
+        filter = {'$or': [{'file_name': regex}, {'caption': regex}]}
     else:
-        cursor = col.find(filter).sort('$natural', -1).skip(offset).limit(max_results)
-        
-        for file in cursor:
-            files.append(file)
+        filter = {'file_name': regex}
 
-    total_results = col.count_documents(filter) if not MULTIPLE_DATABASE else (col.count_documents(filter) + sec_col.count_documents(filter))
-    next_offset = "" if (offset + max_results) >= total_results else (offset + max_results)
+    if file_type:
+        filter['file_type'] = file_type
 
+    total_results = ((await Media.count_documents(filter))+(await Media2.count_documents(filter)))
+
+    #verifies max_results is an even number or not
+    if max_results%2 != 0: 
+        logger.info(f"Since max_results is an odd number ({max_results}), bot will use {max_results+1} as max_results to make it even.")
+        max_results += 1
+
+    cursor = Media.find(filter)
+    cursor2 = Media2.find(filter)
+
+    cursor.sort('$natural', -1)
+    cursor2.sort('$natural', -1)
+
+    cursor2.skip(offset).limit(max_results)
+
+    fileList2 = await cursor2.to_list(length=max_results)
+    if len(fileList2)<max_results:
+        next_offset = offset+len(fileList2)
+        cursorSkipper = (next_offset-(await Media2.count_documents(filter)))
+        cursor.skip(cursorSkipper if cursorSkipper>=0 else 0).limit(max_results-len(fileList2))
+        fileList1 = await cursor.to_list(length=(max_results-len(fileList2)))
+        files = fileList2+fileList1
+        next_offset = next_offset + len(fileList1)
+    else:
+        files = fileList2
+        next_offset = offset + max_results
+    if next_offset >= total_results:
+        next_offset = ''
     return files, next_offset, total_results
-
-    
 
 
 async def get_bad_files(query, file_type=None, filter=False):
@@ -289,9 +311,3 @@ async def get_qualities(text, qualities: list):
             quality.append(q)
     quality = ", ".join(quality)
     return quality[:-2] if quality.endswith(", ") else quality
-
-
-
-
-
-
