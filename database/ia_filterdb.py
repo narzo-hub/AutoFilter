@@ -1,151 +1,225 @@
+import logging
+from struct import pack
 import re
 import base64
-import json
-from struct import pack
 from pyrogram.file_id import FileId
-from motor.motor_asyncio import AsyncIOMotorClient
 from pymongo.errors import DuplicateKeyError
-from info import (
-    CAPTION_LANGUAGES, DATABASE_URI, DATABASE_URI2, DATABASE_NAME,
-    COLLECTION_NAME, USE_CAPTION_FILTER, MAX_B_TN, MOVIE_UPDATE_CHANNEL,
-    OWNERID
-)
+from umongo import Instance, Document, fields
+from motor.motor_asyncio import AsyncIOMotorClient
+from marshmallow.exceptions import ValidationError
+from info import CAPTION_LANGUAGES, DATABASE_URI, DATABASE_URI2, DATABASE_NAME, COLLECTION_NAME, USE_CAPTION_FILTER, MAX_B_TN, MOVIE_UPDATE_CHANNEL, OWNERID
 from utils import get_settings, save_group_settings, temp, get_status
+from database.users_chats_db import add_name
 from .Imdbposter import get_movie_details, fetch_image
 from pyrogram.types import InlineKeyboardButton, InlineKeyboardMarkup
 
-# First Database For File Saving 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+#---------------------------------------------------------
+# Some basic variables needed
+tempDict = {'indexDB': DATABASE_URI}
+
+# Primary DB
 client = AsyncIOMotorClient(DATABASE_URI)
 db = client[DATABASE_NAME]
-col = db.get_collection(COLLECTION_NAME)
+instance = Instance.from_db(db)
 
-# Second Database For File Saving (if enabled)
-client2 = AsyncIOMotorClient(DATABASE_URI2) if MULTIPLE_DATABASE else None
-db2 = client2[DATABASE_NAME] if MULTIPLE_DATABASE else None
-sec_col = db2.get_collection(COLLECTION_NAME) if MULTIPLE_DATABASE else None
+#secondary db
+client2 = AsyncIOMotorClient(DATABASE_URI2)
+db2 = client2[DATABASE_NAME]
+instance2 = Instance.from_db(db2)
 
-def clean_file_name(file_name):
-    """Clean and format the file name."""
-    file_name = re.sub(r"(_|-|\.|\+)", " ", str(file_name)) 
-    unwanted_chars = ['[', ']', '(', ')', '{', '}']
-    for char in unwanted_chars:
-        file_name = file_name.replace(char, '')
-    return ' '.join(
-        filter(
-            lambda x: not x.startswith('@')
-                      and not x.startswith('http')
-                      and not x.startswith('www.')
-                      and not x.startswith('t.me'),
-            file_name.split()
-        )
+
+# Primary DB Model
+@instance.register
+class Media(Document):
+    file_id = fields.StrField(attribute='_id')
+    file_ref = fields.StrField(allow_none=True)
+    file_name = fields.StrField(required=True)
+    file_size = fields.IntField(required=True)
+    file_type = fields.StrField(allow_none=True)
+    mime_type = fields.StrField(allow_none=True)
+    caption = fields.StrField(allow_none=True)
+
+    class Meta:
+        indexes = ('$file_name', )
+        collection_name = COLLECTION_NAME
+
+@instance2.register
+class Media2(Document):
+    file_id = fields.StrField(attribute='_id')
+    file_ref = fields.StrField(allow_none=True)
+    file_name = fields.StrField(required=True)
+    file_size = fields.IntField(required=True)
+    file_type = fields.StrField(allow_none=True)
+    mime_type = fields.StrField(allow_none=True)
+    caption = fields.StrField(allow_none=True)
+
+    class Meta:
+        indexes = ('$file_name', )
+        collection_name = COLLECTION_NAME
+
+async def choose_mediaDB():
+    """This Function chooses which database to use based on the value of indexDB key in the dict tempDict."""
+    global saveMedia
+    if tempDict['indexDB'] == DATABASE_URI:
+        logger.info("Using first db (Media)")
+        saveMedia = Media
+    else:
+        logger.info("Using second db (Media2)")
+        saveMedia = Media2
+
+async def save_file(bot, media):
+  """Save file in database"""
+  global saveMedia
+  file_id, file_ref = unpack_new_file_id(media.file_id)
+  file_name = re.sub(r"(_|\-|\.|\+)", " ", str(media.file_name))
+  try:
+    if saveMedia == Media2: 
+        if await Media.count_documents({'file_id': file_id}, limit=1):
+            logger.warning(f'{file_name} is already saved in primary database!')
+            return False, 0
+    file = saveMedia(
+        file_id=file_id,
+        file_ref=file_ref,
+        file_name=file_name,
+        file_size=media.file_size,
+        file_type=media.file_type,
+        mime_type=media.mime_type,
+        caption=media.caption.html if media.caption else None,
     )
-
-def is_file_already_saved(file_id, file_name):
-    """Check if the file is already saved in either collection."""
-    found1 = {'file_name': file_name}
-    found = {'file_id': file_id}
-    for collection in [col] + ([sec_col] if MULTIPLE_DATABASE else []):
-        if collection.find_one(found1) or collection.find_one(found):
-            print(f"{file_name} is already saved.")
-            return True
-    return False
-
-async def save_file(media):
-    """Save file in the database."""
-    file_id = unpack_new_file_id(media.file_id)
-    file_name = clean_file_name(media.file_name)
-    file = {
-        'file_id': file_id,
-        'file_name': file_name,
-        'file_size': media.file_size,
-        'caption': media.caption.html if media.caption else None
-    }
-    if is_file_already_saved(file_id, file_name):
-        return False, 0
+  except ValidationError:
+    logger.exception('Error occurred while saving file in database')
+    return False, 2
+  else:
     try:
-        await col.insert_one(file)
-        print(f"{file_name} is successfully saved.")
-        return True, 1
+      await file.commit()
     except DuplicateKeyError:
-        print(f"{file_name} is already saved.")
-        return False, 0
-    except Exception:
-        if MULTIPLE_DATABASE and sec_col:
-            try:
-                await sec_col.insert_one(file)
-                print(f"{file_name} is successfully saved.")
-                return True, 1
-            except DuplicateKeyError:
-                print(f"{file_name} is already saved.")
-                return False, 0
-        print("Your Current File Database Is Full, Turn On Multiple Database Feature And Add Second File Mongodb To Save File.")
-        return False, 0
+      logger.warning(f'{getattr(media, "file_name", "NO_FILE")} is already saved in database')   
+      return False, 0
+    else:
+        logger.info(f'{getattr(media, "file_name", "NO_FILE")} is saved to database')
+        if await get_status(bot.me.id):
+            await send_msg(bot, file.file_name, file.caption)
+        return True, 1
 
 async def get_search_results(chat_id, query, file_type=None, max_results=10, offset=0, filter=False):
-    """For given query return (results, next_offset, total_results)"""
+    """For given query return (results, next_offset)"""
+    if chat_id is not None:
+        settings = await get_settings(int(chat_id))
+        try:
+            if settings['max_btn']:
+                max_results = 10
+            else:
+                max_results = int(MAX_B_TN)
+        except KeyError:
+            await save_group_settings(int(chat_id), 'max_btn', False)
+            settings = await get_settings(int(chat_id))
+            if settings['max_btn']:
+                max_results = 10
+            else:
+                max_results = int(MAX_B_TN)
     query = query.strip()
     if not query:
         raw_pattern = '.'
     elif ' ' not in query:
-        raw_pattern = r'(\b|[\.\+\-_])' + re.escape(query) + r'(\b|[\.\+\-_])'
+        raw_pattern = r'(\b|[\.\+\-_])' + query + r'(\b|[\.\+\-_])'
     else:
-        raw_pattern = re.sub(r'\s+', r'.*[\s\.\+\-_]', query)
+        raw_pattern = query.replace(' ', r'.*[\s\.\+\-_()]')
+    
     try:
         regex = re.compile(raw_pattern, flags=re.IGNORECASE)
-    except Exception:
-        regex = query
-    filter_query = {'file_name': regex}
-    files = []
-    if MULTIPLE_DATABASE and sec_col:
-        cursor1 = col.find(filter_query).sort('$natural', -1).skip(offset).limit(max_results)
-        cursor2 = sec_col.find(filter_query).sort('$natural', -1).skip(offset).limit(max_results)
-        files += await cursor1.to_list(length=max_results)
-        files += await cursor2.to_list(length=max_results)
-        total_results = await col.count_documents(filter_query) + await sec_col.count_documents(filter_query)
+    except:
+        return []
+
+    if USE_CAPTION_FILTER:
+        filter = {'$or': [{'file_name': regex}, {'caption': regex}]}
     else:
-        cursor = col.find(filter_query).sort('$natural', -1).skip(offset).limit(max_results)
-        files = await cursor.to_list(length=max_results)
-        total_results = await col.count_documents(filter_query)
-    next_offset = "" if (offset + max_results) >= total_results else (offset + max_results)
+        filter = {'file_name': regex}
+
+    if file_type:
+        filter['file_type'] = file_type
+
+    total_results = ((await Media.count_documents(filter))+(await Media2.count_documents(filter)))
+
+    #verifies max_results is an even number or not
+    if max_results%2 != 0: 
+        logger.info(f"Since max_results is an odd number ({max_results}), bot will use {max_results+1} as max_results to make it even.")
+        max_results += 1
+
+    cursor = Media.find(filter)
+    cursor2 = Media2.find(filter)
+
+    cursor.sort('$natural', -1)
+    cursor2.sort('$natural', -1)
+
+    cursor2.skip(offset).limit(max_results)
+
+    fileList2 = await cursor2.to_list(length=max_results)
+    if len(fileList2)<max_results:
+        next_offset = offset+len(fileList2)
+        cursorSkipper = (next_offset-(await Media2.count_documents(filter)))
+        cursor.skip(cursorSkipper if cursorSkipper>=0 else 0).limit(max_results-len(fileList2))
+        fileList1 = await cursor.to_list(length=(max_results-len(fileList2)))
+        files = fileList2+fileList1
+        next_offset = next_offset + len(fileList1)
+    else:
+        files = fileList2
+        next_offset = offset + max_results
+    if next_offset >= total_results:
+        next_offset = ''
     return files, next_offset, total_results
 
-async def get_bad_files(query, file_type=None, use_filter=False):
-    """For given query return (results, total_results)"""
+
+async def get_bad_files(query, file_type=None, filter=False):
+    """For given query return (results, next_offset)"""
     query = query.strip()
     if not query:
         raw_pattern = '.'
     elif ' ' not in query:
-        raw_pattern = rf'(\b|[.+-_]){re.escape(query)}(\b|[.+-_])'
+        raw_pattern = r'(\b|[\.\+\-_])' + query + r'(\b|[\.\+\-_])'
     else:
-        raw_pattern = re.sub(r'\s+', r'.*[s.+-_]', query)
+        raw_pattern = query.replace(' ', r'.*[\s\.\+\-_()]')
+    
     try:
         regex = re.compile(raw_pattern, flags=re.IGNORECASE)
-    except re.error:
-        return [], 0
-    filter_criteria = {'file_name': regex}
+    except:
+        return []
+
     if USE_CAPTION_FILTER:
-        filter_criteria = {'$or': [filter_criteria, {'caption': regex}]}
-    def count_documents(collection):
-        return collection.count_documents(filter_criteria)
-    def find_documents(collection):
-        return list(collection.find(filter_criteria))
-    if MULTIPLE_DATABASE and sec_col:
-        total_results = await col.count_documents(filter_criteria) + await sec_col.count_documents(filter_criteria)
-        files = await col.find(filter_criteria).to_list(length=0) + await sec_col.find(filter_criteria).to_list(length=0)
+        filter = {'$or': [{'file_name': regex}, {'caption': regex}]}
     else:
-        total_results = await col.count_documents(filter_criteria)
-        files = await col.find(filter_criteria).to_list(length=0)
+        filter = {'file_name': regex}
+
+    if file_type:
+        filter['file_type'] = file_type
+
+    cursor = Media.find(filter)
+    cursor2 = Media2.find(filter)
+
+    cursor.sort('$natural', -1)
+    cursor2.sort('$natural', -1)
+
+    files = ((await cursor2.to_list(length=(await Media2.count_documents(filter))))+(await cursor.to_list(length=(await Media.count_documents(filter)))))
+
+    total_results = len(files)
+
     return files, total_results
 
 async def get_file_details(query):
-    result = await col.find_one({'file_id': query})
-    if not result and MULTIPLE_DATABASE and sec_col:
-        result = await sec_col.find_one({'file_id': query})
-    return result
+    filter = {'file_id': query}
+    cursor = Media.find(filter)
+    filedetails = await cursor.to_list(length=1)
+    if not filedetails:
+        cursor2 = Media2.find(filter)
+        filedetails = await cursor2.to_list(length=1)
+    return filedetails
+
 
 def encode_file_id(s: bytes) -> str:
     r = b""
     n = 0
+
     for i in s + bytes([22]) + bytes([4]):
         if i == 0:
             n += 1
@@ -153,11 +227,16 @@ def encode_file_id(s: bytes) -> str:
             if n:
                 r += b"\x00" + bytes([n])
                 n = 0
+
             r += bytes([i])
+
     return base64.urlsafe_b64encode(r).decode().rstrip("=")
 
+def encode_file_ref(file_ref: bytes) -> str:
+    return base64.urlsafe_b64encode(file_ref).decode().rstrip("=")
+
 def unpack_new_file_id(new_file_id):
-    """Return file_id"""
+    """Return file_id, file_ref"""
     decoded = FileId.decode(new_file_id)
     file_id = encode_file_id(
         pack(
@@ -168,58 +247,60 @@ def unpack_new_file_id(new_file_id):
             decoded.access_hash
         )
     )
-    return file_id
+    file_ref = encode_file_ref(decoded.file_reference)
+    return file_id, file_ref
+
 
 async def send_msg(bot, filename, caption): 
     try:
         filename = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', filename).strip()
         caption = re.sub(r'\(\@\S+\)|\[\@\S+\]|\b@\S+|\bwww\.\S+', '', caption).strip()
+        
         year_match = re.search(r"\b(19|20)\d{2}\b", caption)
         year = year_match.group(0) if year_match else None
+
         pattern = r"(?i)(?:s|season)0*(\d{1,2})"
         season = re.search(pattern, caption) or re.search(pattern, filename)
         season = season.group(1) if season else None 
+
         if year:
             filename = filename[: filename.find(year) + 4]  
         elif season and season in filename:
             filename = filename[: filename.find(season) + 1]
-        qualities = [
-            "ORG", "org", "hdcam", "HDCAM", "HQ", "hq", "HDRip", "hdrip", "camrip", "CAMRip", "hdtc",
-            "predvd", "DVDscr", "dvdscr", "dvdrip", "dvdscr", "HDTC", "dvdscreen", "HDTS", "hdts"
-        ]
+
+        qualities = ["ORG", "org", "hdcam", "HDCAM", "HQ", "hq", "HDRip", "hdrip", "camrip", "CAMRip", "hdtc", "predvd", "DVDscr", "dvdscr", "dvdrip", "dvdscr", "HDTC", "dvdscreen", "HDTS", "hdts"]
         quality = await get_qualities(caption.lower(), qualities) or "HDRip"
+
         language = ""
         possible_languages = CAPTION_LANGUAGES
         for lang in possible_languages:
             if lang.lower() in caption.lower():
                 language += f"{lang}, "
         language = language[:-2] if language else "Not idea 😄"
+
         filename = re.sub(r"[\(\)\[\]\{\}:;'\-!]", "", filename)
+
         text = "#𝑵𝒆𝒘_𝑭𝒊𝒍𝒆_𝑨𝒅𝒅𝒆𝒅 ✅\n\n👷𝑵𝒂𝒎𝒆: `{}`\n\n🌳𝑸𝒖𝒂𝒍𝒊𝒕𝒚: {}\n\n🍁𝑨𝒖𝒅𝒊𝒐: {}"
         text = text.format(filename, quality, language)
+
         if await add_name(OWNERID, filename):
             imdb = await get_movie_details(filename)  
             resized_poster = None
+
             if imdb:
                 poster_url = imdb.get('poster_url')
                 if poster_url:
                     resized_poster = await fetch_image(poster_url)  
+
             filenames = filename.replace(" ", '-')
             btn = [[InlineKeyboardButton('🌲 Get Files 🌲', url=f"https://telegram.me/{temp.U_NAME}?start=getfile-{filenames}")]]
+            
             if resized_poster:
-                await bot.send_photo(
-                    chat_id=MOVIE_UPDATE_CHANNEL,
-                    photo=resized_poster,
-                    caption=text,
-                    reply_markup=InlineKeyboardMarkup(btn)
-                )
+                await bot.send_photo(chat_id=MOVIE_UPDATE_CHANNEL, photo=resized_poster, caption=text, reply_markup=InlineKeyboardMarkup(btn))
             else:              
-                await bot.send_message(
-                    chat_id=MOVIE_UPDATE_CHANNEL,
-                    text=text,
-                    reply_markup=InlineKeyboardMarkup(btn)
-                )
-    except Exception:
+                await bot.send_message(chat_id=MOVIE_UPDATE_CHANNEL, text=text, reply_markup=InlineKeyboardMarkup(btn))
+
+    except:
         pass
 
 async def get_qualities(text, qualities: list):
