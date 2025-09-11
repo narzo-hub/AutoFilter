@@ -192,14 +192,8 @@ def encode_file_id(s: bytes) -> str:
 def unpack_new_file_id(new_file_id):
     """Return file_id"""
     decoded = FileId.decode(new_file_id)
-    file_id = encode_file_id(
-        pack(
-            "<iiqq",
-            int(decoded.file_type),
-            decoded.dc_id,
-            decoded.media_id,
-            decoded.access_hash
-        )
+    file_id = encode_file_id(pack("<iiqq", int(decoded.file_type), decoded.dc_id, decoded.media_id, decoded.access_hash))
+        
 
 
 async def send_msg(bot, filename, caption): 
