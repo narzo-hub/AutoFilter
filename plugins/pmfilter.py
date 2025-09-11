@@ -1447,7 +1447,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 reply_to_message_id=query.message.id
             )
 
-    elif query.data.startswith("show_option"):
+elif query.data.startswith("show_option"):
         ident, from_user = query.data.split("#")
         btn = [[
             InlineKeyboardButton("⚠️ ᴜɴᴀᴠᴀɪʟᴀʙʟᴇ ⚠️",
@@ -1508,89 +1508,9 @@ async def cb_handler(client: Client, query: CallbackQuery):
                     reply_markup=InlineKeyboardMarkup(btn2)
                 )
 
-
-    elif query.data.startswith("Not_Released"):
+elif query.data.startswith("Not_Released"):
         ident, from_user = query.data.split("#")
-        btn = [[InlineKeyboardButton(
-            "📌 Not Released 📌", callback_data=f"nralert#{from_user}")]]
-        btn2 = [[
-            InlineKeyboardButton('ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ', url=link.invite_link),
-            InlineKeyboardButton("ᴠɪᴇᴡ ꜱᴛᴀᴛᴜꜱ", url=f"{query.message.link}")
-        ]]
-        if query.from_user.id in ADMINS:
-            user = await client.get_users(from_user)
-            reply_markup = InlineKeyboardMarkup(btn)
-            content = query.message.text
-            await query.message.edit_text(f"<b><strike>{content}</strike></b>")
-            await query.message.edit_reply_markup(reply_markup)
-            await query.answer("Sᴇᴛ ᴛᴏ Nᴏᴛ Rᴇʟᴇᴀꜱᴇᴅ !")
-            content = extract_request_content(query.message.text)
-            try:
-                await client.send_message(
-                    chat_id=int(from_user),
-                    text=(
-                        f"<b>Hᴇʏ {user.mention}\n\n"
-                        f"<code>{content}</code>, ʏᴏᴜʀ ʀᴇǫᴜᴇꜱᴛ ʜᴀꜱ ɴᴏᴛ ʙᴇᴇɴ ʀᴇʟᴇᴀꜱᴇᴅ ʏᴇᴛ\n\n"
-                        f"#CᴏᴍɪɴɢSᴏᴏɴ...🕊️✌️</b>"
-                    ),
-                    reply_markup=InlineKeyboardMarkup(btn2)
-                )
-            except UserIsBlocked:
-                await client.send_message(
-                    chat_id=int(SUPPORT_CHAT_ID),
-                    text=(
-                        f"<u>Hᴇʏ {user.mention}</u>\n\n"
-                        f"<b><code>{content}</code>, ʏᴏᴜʀ ʀᴇǫᴜᴇꜱᴛ ʜᴀꜱ ɴᴏᴛ ʙᴇᴇɴ ʀᴇʟᴇᴀꜱᴇᴅ ʏᴇᴛ\n\n"
-                        f"#CᴏᴍɪɴɢSᴏᴏɴ...🕊️✌️\n\n"
-                        f"<small>Bʟᴏᴄᴋᴇᴅ? Uɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ ᴛᴏ ʀᴇᴄᴇɪᴠᴇ ᴍᴇꜱꜱᴀɢᴇꜱ.</small></b>"
-                    ),
-                    reply_markup=InlineKeyboardMarkup(btn2)
-                )
-        else:
-            await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢʜᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
-    elif query.data.startswith("Type_Correct_Spelling"):
-        ident, from_user = query.data.split("#")
-        btn = [[
-            InlineKeyboardButton("♨️ Type Correct Spelling ♨️",
-                                 callback_data=f"wsalert#{from_user}")
-        ]]
-        btn2 = [[
-            InlineKeyboardButton('ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ', url=link.invite_link),
-            InlineKeyboardButton("ᴠɪᴇᴡ ꜱᴛᴀᴛᴜꜱ", url=f"{query.message.link}")
-        ]]
-        if query.from_user.id in ADMINS:
-            user = await client.get_users(from_user)
-            reply_markup = InlineKeyboardMarkup(btn)
-            content = query.message.text
-            await query.message.edit_text(f"<b><strike>{content}</strike></b>")
-            await query.message.edit_reply_markup(reply_markup)
-            await query.answer("Sᴇᴛ ᴛᴏ Cᴏʀʀᴇᴄᴛ Sᴘᴇʟʟɪɴɢ !")
-            content = extract_request_content(query.message.text)
-            try:
-                await client.send_message(
-                    chat_id=int(from_user),
-                    text=(
-                        f"<b>Hᴇʏ {user.mention}\n\n"
-                        f"Wᴇ Dᴇᴄʟɪɴᴇᴅ Yᴏᴜʀ Rᴇǫᴜᴇsᴛ <code>{content}</code>, Bᴇᴄᴀᴜsᴇ Yᴏᴜʀ Sᴘᴇʟʟɪɴɢ Wᴀs Wʀᴏɴɢ 😢\n\n"
-                        f"#Wʀᴏɴɢ_Sᴘᴇʟʟɪɴɢ 😑</b>"
-                    ),
-                    reply_markup=InlineKeyboardMarkup(btn2)
-                )
-            except UserIsBlocked:
-                await client.send_message(
-                    chat_id=int(SUPPORT_CHAT_ID),
-                    text=(
-                        f"<u>Hᴇʏ {user.mention}</u>\n\n"
-                        f"<b><code>{content}</code>, Bᴇᴄᴀᴜsᴇ Yᴏᴜʀ Sᴘᴇʟʟɪɴɢ Wᴀs Wʀᴏɴɢ 😢\n\n"
-                        f"#Wʀᴏɴɢ_Sᴘᴇʟʟɪɴɢ 😑\n\n"
-                        f"<small>Bʟᴏᴄᴋᴇᴅ? Uɴʙʟᴏᴄᴋ ᴛʜᴇ ʙᴏᴛ ᴛᴏ ʀᴇᴄᴇɪᴠᴇ ᴍᴇꜱꜱᴀɢᴇꜱ.</small></b>"
-                    ),
-                    reply_markup=InlineKeyboardMarkup(btn2)
-                )
-    ident, from_user = query.data.split("#")
-        btn = [[InlineKeyboardButton(
-            "📌 Not Released 📌", callback_data=f"nralert#{from_user}")]]
+        btn = [[InlineKeyboardButton("📌 Not Released 📌", callback_data=f"nralert#{from_user}")]]
         btn2 = [[
             InlineKeyboardButton('ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ', url='https://t.me/+VKXjR8-5cGliYzA1'),
             InlineKeyboardButton("ᴠɪᴇᴡ ꜱᴛᴀᴛᴜꜱ", url=f"{query.message.link}")
@@ -1668,12 +1588,11 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 )
         else:
             await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢʜᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-
+            
     elif query.data.startswith("Not_Available_In_The_Hindi"):
         ident, from_user = query.data.split("#")
         btn = [[
-            InlineKeyboardButton(
-                "⚜️ Not Available In The Hindi ⚜️", callback_data=f"hnalert#{from_user}")
+            InlineKeyboardButton("⚜️ Not Available In The Hindi ⚜️", callback_data=f"hnalert#{from_user}")
         ]]
         btn2 = [[
             InlineKeyboardButton('ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ', url='https://t.me/+VKXjR8-5cGliYzA1'),
@@ -1711,11 +1630,10 @@ async def cb_handler(client: Client, query: CallbackQuery):
         else:
             await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢʜᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
 
-       elif query.data.startswith("uploaded"):
+    elif query.data.startswith("uploaded"):
         ident, from_user = query.data.split("#")
         btn = [[
-            InlineKeyboardButton(
-                "✅ ᴜᴘʟᴏᴀᴅᴇᴅ ✅", callback_data=f"upalert#{from_user}")
+            InlineKeyboardButton("✅ ᴜᴘʟᴏᴀᴅᴇᴅ ✅", callback_data=f"upalert#{from_user}")
         ]]
         btn2 = [[
             InlineKeyboardButton('ᴊᴏɪɴ ᴄʜᴀɴɴᴇʟ', url='https://t.me/+VKXjR8-5cGliYzA1'),
@@ -1756,7 +1674,7 @@ async def cb_handler(client: Client, query: CallbackQuery):
         else:
             await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
 
-    elif query.data.startswith("already_available"):
+elif query.data.startswith("already_available"):
         ident, from_user = query.data.split("#")
         btn = [[
             InlineKeyboardButton("♻️ ᴀʟʀᴇᴀᴅʏ ᴀᴠᴀɪʟᴀʙʟᴇ ♻️",
@@ -1801,7 +1719,8 @@ async def cb_handler(client: Client, query: CallbackQuery):
                 )
         else:
             await query.answer("Yᴏᴜ ᴅᴏɴ'ᴛ ʜᴀᴠᴇ sᴜғғɪᴄɪᴀɴᴛ ʀɪɢᴛs ᴛᴏ ᴅᴏ ᴛʜɪs !", show_alert=True)
-    
+
+
     elif query.data.startswith("alalert"):
         ident, from_user = query.data.split("#")
         if int(query.from_user.id) == int(from_user):
