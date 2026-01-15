@@ -69,9 +69,9 @@ APPROVED = environ.get("APPROVED_WELCOME", "on").lower()
 # ============================
 # MongoDB Configuration
 # ============================
-DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://Yashds:Yashds@yashds.ttyep08.mongodb.net/?retryWrites=true&w=majority&appName=Yashds")
+DATABASE_URI = environ.get('DATABASE_URI', "mongodb+srv://Yash:yash123@cluster0.ziooass.mongodb.net/?appName=Cluster0")
 DATABASE_URI2 = environ.get('DATABASE_URI2', "mongodb+srv://Yashds:yashds@yashds.xzuhxvo.mongodb.net/?retryWrites=true&w=majority&appName=Yashds")
-DATABASE_NAME = environ.get('DATABASE_NAME', "Yashds")
+DATABASE_NAME = environ.get('DATABASE_NAME', "Cluster0")
 COLLECTION_NAME = environ.get('COLLECTION_NAME', 'Lucy_files')
 
 # ============================
